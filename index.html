@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>日本电影发展史｜可视化知识图谱</title>
+<style>
+:root{--bg:#0b1020;--panel:#121b31;--line:#34425f;--text:#edf2ff;--muted:#9eacc8;--verm:#e8765c;--cyan:#72c7d7;--pink:#e8a0b5;--green:#91c7a0;--violet:#b6a1e8}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 20% 0%,#241f33 0,#0b1020 55%);color:var(--text);font-family:Inter,"PingFang SC","Microsoft YaHei",sans-serif}
+header{padding:28px 34px 18px;border-bottom:1px solid #26334e;display:flex;justify-content:space-between;gap:20px;align-items:end}
+.kicker{font-size:11px;letter-spacing:3px;color:var(--verm);text-transform:uppercase}h1{font-size:clamp(25px,3vw,40px);margin:8px 0 5px;letter-spacing:1px}.sub{color:var(--muted);font-size:13px}
+.actions{display:flex;gap:8px;flex-wrap:wrap}button{background:#18243c;color:var(--text);border:1px solid #3a4b6c;border-radius:20px;padding:8px 13px;cursor:pointer;font-size:12px}button:hover,button.active{background:#33415d;border-color:var(--verm)}
+main{padding:20px 24px 30px;max-width:1600px;margin:auto}.toolbar{display:flex;justify-content:space-between;align-items:center;gap:15px;flex-wrap:wrap;margin-bottom:14px}.legend{display:flex;gap:14px;flex-wrap:wrap;color:var(--muted);font-size:11px}.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px}
+.graph-wrap{border:1px solid #2a3956;border-radius:16px;background:rgba(9,15,29,.72);overflow:auto;box-shadow:0 22px 70px #0005}
+svg{display:block;min-width:1180px;width:100%;height:auto}
+.edge{fill:none;stroke:#51617e;stroke-width:1.5;opacity:.62}.edge.major{stroke:var(--verm);stroke-width:2.1;opacity:.9}.edge-label{fill:#7f91b2;font-size:10px}
+.node{cursor:pointer}.node rect{stroke-width:1.2;rx:9;transition:.18s}.node:hover rect,.node.selected rect{stroke:#fff;stroke-width:2.5;filter:drop-shadow(0 0 7px #ffffff55)}.node text{pointer-events:none;text-anchor:middle;fill:#f4f6ff;font-size:12px}.node .small{font-size:10px;fill:#c4cee2}.node .year{font-size:9px;fill:#9daecc}
+.period rect{fill:#1b2942;stroke:#e2a08c;stroke-width:1.5}.period text{font-weight:700;font-size:14px}.period .year{fill:#e8765c}
+.kind-movement rect{fill:#26334f;stroke:var(--cyan)}.kind-film rect{fill:#392b3d;stroke:var(--pink)}.kind-director rect{fill:#253c35;stroke:var(--green)}.kind-concept rect{fill:#352f4a;stroke:var(--violet)}
+.central rect{fill:#6c3a2b;stroke:#f2a99a;stroke-width:2}.central text{font-size:20px;font-weight:700}
+.node.dim rect{opacity:.16}.node.dim text{opacity:.16}
+#edges path.dim{opacity:.07}
+.info{margin-top:14px;display:grid;grid-template-columns:1fr auto;gap:18px;background:linear-gradient(120deg,#17243b,#111a2d);border:1px solid #2e3d5c;border-radius:14px;padding:17px 20px;min-height:110px}.info h2{font-size:18px;margin:0 0 7px}.info p{margin:0;color:#b8c4db;font-size:13px;line-height:1.8}.meta{align-self:center;text-align:right;color:var(--verm);font-size:12px;white-space:nowrap}
+.note{font-size:11px;line-height:1.8;color:#8493af;margin:14px 4px 0}.footer{padding:18px 34px;color:#71809b;font-size:10px;border-top:1px solid #26334e}
+.modal{position:fixed;inset:0;background:rgba(3,8,18,.64);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:50;padding:20px}
+.modal.hidden{display:none}
+.modal-card{width:min(580px,94vw);max-height:88vh;overflow:auto;background:linear-gradient(150deg,#1a2742,#10182b);border:1px solid #3d5076;border-radius:18px;padding:24px 26px;box-shadow:0 30px 90px #000c;position:relative;animation:pop .18s ease}
+@keyframes pop{from{transform:scale(.94);opacity:0}to{transform:scale(1);opacity:1}}
+.modal-type{display:inline-block;border:1px solid #596a88;border-radius:20px;padding:4px 11px;color:#d7e1f4;font-size:11px;background:#22304d}
+#modal-close{position:absolute;right:14px;top:10px;background:none;border:none;color:#8ba0c4;font-size:20px;cursor:pointer;padding:4px 8px}
+#modal-close:hover{color:#fff}
+#modal-title{font-size:23px;margin:10px 0 4px;color:#fff}
+.modal-meta{color:var(--verm);font-size:12px;margin-bottom:12px}
+#modal-desc{color:#c2cde2;font-size:13.5px;line-height:1.95;margin:0}
+#modal-related{margin-top:16px;border-top:1px solid #2e3d5c;padding-top:13px}
+#modal-related h3{font-size:12px;color:#8ba0c4;margin:0 0 9px;font-weight:600}
+#modal-chips{display:flex;flex-wrap:wrap;gap:7px}
+.chip{background:#22304d;border:1px solid #43557c;color:#dce6f8;border-radius:20px;padding:5px 12px;font-size:11.5px;cursor:pointer}
+.chip:hover{border-color:var(--verm);background:#2c3d5e}
+@media(max-width:700px){header{padding:22px 18px;display:block}.actions{margin-top:15px}main{padding:15px 12px}.info{grid-template-columns:1fr}.meta{text-align:left}}
+</style>
+</head>
+<body>
+<header>
+ <div><div class="kicker">JAPANESE CINEMA · KNOWLEDGE MAP</div><h1>日本电影发展史</h1><div class="sub">点击任意节点弹出详情卡片｜时期筛选、关联跳转、导出 SVG</div></div>
+ <div class="actions"><button id="reset">重置视图</button><button id="download">导出 SVG</button></div>
+</header>
+<main>
+ <div class="toolbar">
+  <div class="legend">
+   <span><i class="dot" style="background:var(--cyan)"></i>流派 / 运动</span>
+   <span><i class="dot" style="background:var(--pink)"></i>代表电影</span>
+   <span><i class="dot" style="background:var(--green)"></i>导演</span>
+   <span><i class="dot" style="background:var(--violet)"></i>概念 / 方法</span>
+  </div>
+  <div class="actions" id="filters"><button class="active" data-filter="all">全部时期</button><button data-filter="p1">早期电影</button><button data-filter="p2">有声与战时</button><button data-filter="p3">战后黄金时代</button><button data-filter="p4">日本新浪潮</button><button data-filter="p5">动画与类型</button><button data-filter="p6">当代电影</button></div>
+ </div>
+ <div class="graph-wrap"><svg id="map" viewBox="0 0 1500 1040" role="img" aria-label="日本电影发展史知识图谱">
+ <defs><marker id="arrow" markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6" fill="none" stroke="#8190ad" stroke-width="1"/></marker></defs>
+ <g id="edges"></g><g id="nodes"></g>
+ </svg></div>
+ <section class="info" aria-live="polite"><div><h2 id="info-title">日本电影</h2><p id="info-desc">点击任意节点，弹出详情卡片：查看该流派、电影、导演或概念的介绍、年代与关联节点。</p></div><div class="meta" id="info-meta">1896 — 至今</div></section>
+ <p class="note">阅读提示：图谱以时间阶段为主轴，并用连线标注“属于 / 代表作 / 创作者 / 影响或方法”等关系。辩士（活动写真解说员）是日本默片时代特有的观影制度；“日本新浪潮”并非统一宣言，而是对制片厂体制与既有美学的一次代际反叛；吉卜力与新海诚代表动画电影的两条不同路径。部分当代标签是研究视角或创作倾向，不代表统一组织。</p>
+</main>
+<div class="footer">JAPAN CINEMA · VISUAL KNOWLEDGE GRAPH · 学习与课堂讲解参考</div>
+<div class="modal hidden" id="modal" role="dialog" aria-modal="true">
+ <div class="modal-card">
+  <button id="modal-close" aria-label="关闭">✕</button>
+  <span class="modal-type" id="modal-type">节点</span>
+  <h2 id="modal-title"></h2>
+  <div class="modal-meta" id="modal-meta"></div>
+  <p id="modal-desc"></p>
+  <div id="modal-related"><h3>关联节点（点击跳转）</h3><div id="modal-chips"></div></div>
+ </div>
+</div>
+<script>
+const nodes = [
+{id:'root',label:'日本电影',type:'central',x:665,y:25,w:170,h:58,desc:'日本电影以活动写真与辩士文化起步，历经无声片实验、战时动员、战后黄金时代与新浪潮，在动画与作者电影两条路径上持续影响世界电影。',meta:'1896 — 至今'},
+{id:'p1',label:'01 早期电影',year:'1896—1929',type:'period',x:35,y:125,w:190,h:54,desc:'电影传入日本后被称为“活动写真”，无声片在辩士解说制度下发展，并出现纯电影等前卫实验。',detail:'这一时期：1896年电影以“活动写真”之名传入日本，无声片由辩士现场解说。牧野省三以《本能寺合战》(1908) 开创时代剧与明星制；衣笠贞之助的《疯狂的一页》(1926) 代表摆脱舞台束缚的前卫实验。点击下方关联节点可查看每位创作者与作品的详情。',meta:'1896—1929'},
+{id:'p2',label:'02 有声与战时',year:'1929—1945',type:'period',x:275,y:125,w:190,h:54,desc:'有声化转型与“小市民电影”全盛，战时体制下电影被纳入国策动员，巨匠们在限制中确立个人风格。',detail:'这一时期：五所平之助《夫人与老婆》(1931) 开启日本有声片时代；松竹蒲田“小市民电影”走向全盛；小津安二郎在《我出生了，但…》(1932) 中确立低机位与庶民视角；战时体制下黑泽明以《姿三四郎》(1943) 出道。',meta:'1929—1945'},
+{id:'p3',label:'03 战后黄金时代',year:'1945—1960',type:'period',x:515,y:125,w:190,h:54,desc:'五社体制全盛期，黑泽明、小津安二郎、沟口健二、成濑巳喜男等巨匠拍出影史经典，日本电影走向世界。',detail:'这一时期：黑泽明《罗生门》(1950) 获威尼斯金狮奖，日本电影由此走向世界，《七武士》(1954) 影响后世类型片；沟口健二《雨月物语》(1953)、小津安二郎《东京物语》(1953)、成濑巳喜男《浮云》(1955) 相继问世；东宝特摄《哥斯拉》(1954) 开创怪兽电影。',meta:'1945—1960'},
+{id:'p4',label:'04 日本新浪潮',year:'1960—1970',type:'period',x:755,y:125,w:190,h:54,desc:'大岛渚、今村昌平等年轻导演以激进题材、底层视角与形式实验，对制片厂传统发起代际反叛。',detail:'这一时期：大岛渚以《青春残酷物语》(1960) 宣告反叛；今村昌平在《日本昆虫记》(1963) 中以人类学视角凝视底层生存；敕使河原宏与安部公房合作的《砂之女》(1964) 探索存在寓言；ATG 推动低成本作者电影与实验影像。',meta:'1960—1970'},
+{id:'p5',label:'05 动画与类型',year:'1970—1995',type:'period',x:995,y:125,w:190,h:54,desc:'电视动画普及后，吉卜力等推动动画电影登上大银幕；特摄、系列喜剧与类型片走向成熟与多元。',detail:'这一时期：宫崎骏《风之谷》(1984) 的成功直接催生吉卜力工作室；押井守《攻壳机动队》(1995) 以哲思拓展动画的成人表达；山田洋次《寅次郎的故事》(1969—2019) 成为国民记忆；黑泽明以《乱》(1985) 完成晚年色彩史诗。',meta:'1970—1995'},
+{id:'p6',label:'06 当代日本电影',year:'1995—至今',type:'period',x:1235,y:125,w:210,h:54,desc:'北野武、是枝裕和、滨口龙介等以国际电影节路线持续输出作者表达，动画与实拍双线并进。',detail:'这一时期：北野武《花火》(1997) 获威尼斯金狮；宫崎骏《千与千寻》(2001) 获奥斯卡并刷新票房；是枝裕和《小偷家族》(2018) 获戛纳金棕榈；滨口龙介《驾驶我的车》(2021) 获奥斯卡最佳国际影片；新海诚《你的名字。》(2016) 带动动画全球化。',meta:'1995—至今'},
+{id:'m1',label:'活动写真 / 辩士时代',type:'movement',x:25,y:235,w:210,h:48,period:'p1',desc:'1896年电影传入日本，无声片由辩士现场解说，形成独特的观影文化；舞台传统与影像技术并行发展。',meta:'1896—1920年代'},
+{id:'d1',label:'牧野省三',type:'director',x:25,y:305,w:210,h:42,period:'p1',desc:'被尊为“日本电影之父”，开创时代剧类型与明星制度，推动日本电影从舞台记录走向叙事电影。',meta:'1878—1929'},
+{id:'f1',label:'《本能寺合战》',type:'film',x:25,y:375,w:210,h:42,period:'p1',desc:'牧野省三执导的早期故事片之一，开启日本时代剧传统，标志电影叙事意识的觉醒。',meta:'1908'},
+{id:'d2',label:'衣笠贞之助',type:'director',x:25,y:445,w:210,h:42,period:'p1',desc:'由女形演员转型的前卫默片导演，主张摆脱辩士与舞台束缚，探索纯粹的电影语言。',meta:'1896—1982'},
+{id:'f2',label:'《疯狂的一页》',type:'film',x:25,y:515,w:210,h:42,period:'p1',desc:'以精神病院为舞台的前卫实验默片，视觉蒙太奇大胆，是日本“新感觉派”电影的代表作。',meta:'1926'},
+{id:'c1',label:'辩士 / 纯电影运动',type:'concept',x:25,y:585,w:210,h:48,period:'p1',desc:'辩士解说是日本默片特有的制度；纯电影运动则主张抛弃舞台化表演，用摄影机、剪辑与运动叙事。',meta:'默片时代特质'},
+{id:'m2',label:'有声转型 / 小市民电影',type:'movement',x:265,y:235,w:210,h:48,period:'p2',desc:'1931年前后日本完成有声化，松竹蒲田厂的日常喜剧与庶民温情形成“蒲田调”，战后发展为庶民剧传统。',meta:'1931—1945'},
+{id:'d3',label:'五所平之助',type:'director',x:265,y:305,w:210,h:42,period:'p2',desc:'日本有声电影先驱之一，松竹蒲田小市民电影的代表导演，擅长都市日常的细腻描写。',meta:'1902—1981'},
+{id:'f3',label:'《夫人与老婆》',type:'film',x:265,y:375,w:210,h:42,period:'p2',desc:'日本第一部真正意义上的有声电影，以都市家庭喜剧描绘现代生活，具有里程碑意义。',meta:'1931'},
+{id:'d4',label:'小津安二郎',type:'director',x:265,y:445,w:210,h:42,period:'p2',desc:'战前已确立低机位、静观与家庭题材的个人风格，以“物哀”式的日常书写闻名于世。',meta:'1903—1963'},
+{id:'f4',label:'《我出生了，但…》',type:'film',x:265,y:515,w:210,h:42,period:'p2',desc:'以孩童视角折射成人世界的权力与等级，笑中带泪，是小津默片时代的杰作。',meta:'1932'},
+{id:'d5',label:'黑泽明',type:'director',x:265,y:585,w:210,h:42,period:'p2',desc:'战时以《姿三四郎》出道，动感剪辑与造型意识初显，战后成为日本电影的国际代言人。',meta:'1910—1998'},
+{id:'f5',label:'《姿三四郎》',type:'film',x:265,y:655,w:210,h:42,period:'p2',desc:'柔道题材处女作，风与草的抒情剪辑已显露黑泽明的作者风格，并确立其影坛地位。',meta:'1943'},
+{id:'c2',label:'蒲田调 / 战时国策片',type:'concept',x:265,y:725,w:210,h:48,period:'p2',desc:'松竹蒲田厂形成明快、温情的家庭喜剧风格；战时体制则要求电影承担国策宣传，创作受到管制。',meta:'产业与时代'},
+{id:'m3',label:'战后巨匠时代',type:'movement',x:505,y:235,w:210,h:48,period:'p3',desc:'五社体制下黑泽、小津、沟口、成濑等巨匠相继拍出影史经典，《罗生门》获奖标志日本电影走向世界。',meta:'1950年代'},
+{id:'d6',label:'黑泽明',type:'director',x:505,y:305,w:210,h:42,period:'p3',desc:'以《罗生门》获威尼斯金狮奖，将日本电影推向国际；《七武士》深刻影响世界类型电影。',meta:'1910—1998'},
+{id:'f6',label:'《罗生门》',type:'film',x:505,y:375,w:210,h:42,period:'p3',desc:'多视角叙述追问真相的相对性，获威尼斯金狮奖与奥斯卡荣誉奖，西方由此“发现”日本电影。',meta:'1950'},
+{id:'f7',label:'《七武士》',type:'film',x:505,y:445,w:210,h:42,period:'p3',desc:'群像式武士片典范，人物塑造与动作场面兼具，被反复翻拍，影响深远。',meta:'1954'},
+{id:'d7',label:'沟口健二',type:'director',x:505,y:515,w:210,h:42,period:'p3',desc:'“一场一镜”长镜头美学大师，擅长以流动影像书写女性命运与社会压迫。',meta:'1898—1956'},
+{id:'f8',label:'《雨月物语》',type:'film',x:505,y:585,w:210,h:42,period:'p3',desc:'战后沟口风格的集大成，幽灵与现世交织的古典美学，获威尼斯银狮奖。',meta:'1953'},
+{id:'f9',label:'《东京物语》',type:'film',x:505,y:655,w:210,h:42,period:'p3',desc:'小津安二郎“物哀”美学的巅峰，父母与子女间的疏离书写，屡次入选世界影史十佳。',meta:'1953'},
+{id:'d8',label:'成濑巳喜男',type:'director',x:505,y:725,w:210,h:42,period:'p3',desc:'庶民剧大师，以女性命运、家庭暗流与细腻写实著称，风格沉郁而克制。',meta:'1905—1969'},
+{id:'f10',label:'《浮云》',type:'film',x:505,y:795,w:210,h:42,period:'p3',desc:'战后女性漂泊命运的沉郁书写，被广泛视为成濑最高杰作。',meta:'1955'},
+{id:'c3',label:'五社体制 / 特摄',type:'concept',x:505,y:865,w:210,h:48,period:'p3',desc:'东宝、松竹、大映、东映、日活构成产业骨架；东宝特摄《哥斯拉》(1954) 开创怪兽电影类型。',meta:'产业与技术'},
+{id:'m4',label:'日本新浪潮',type:'movement',x:745,y:235,w:210,h:48,period:'p4',desc:'松竹、日活等制片厂内崛起的年轻一代，以激进题材、底层视角与形式反叛冲击传统美学。',meta:'1960年代'},
+{id:'d9',label:'大岛渚',type:'director',x:745,y:305,w:210,h:42,period:'p4',desc:'新浪潮旗手，持续挑战政治、性与影像边界，晚年《感官世界》引发国际争议。',meta:'1932—2013'},
+{id:'f11',label:'《青春残酷物语》',type:'film',x:745,y:375,w:210,h:42,period:'p4',desc:'青年反叛与虚无情绪的时代肖像，宣告新浪潮到来，也重塑了松竹的青春片路线。',meta:'1960'},
+{id:'d10',label:'今村昌平',type:'director',x:745,y:445,w:210,h:42,period:'p4',desc:'以人类学视角凝视底层欲望与生存，“重与轻”并置的美学，两夺戛纳金棕榈。',meta:'1926—2006'},
+{id:'f12',label:'《日本昆虫记》',type:'film',x:745,y:515,w:210,h:42,period:'p4',desc:'底层女性的生存史诗，今村“重喜剧”与纪录式观察的代表作。',meta:'1963'},
+{id:'d11',label:'敕使河原宏',type:'director',x:745,y:585,w:210,h:42,period:'p4',desc:'草月流花道传人转执导筒，与安部公房合作，探索存在主义与影像的实验表达。',meta:'1927—2001'},
+{id:'f13',label:'《砂之女》',type:'film',x:745,y:655,w:210,h:42,period:'p4',desc:'沙丘中的存在寓言，获戛纳评审团特别奖，是新浪潮中最具国际声誉的实验作品之一。',meta:'1964'},
+{id:'c4',label:'ATG / 独立制片',type:'concept',x:745,y:725,w:210,h:48,period:'p4',desc:'日本艺术影院行会（ATG）推动低成本作者电影与实验影像，成为新浪潮的重要发行与制作平台。',meta:'1961—1980年代'},
+{id:'m5',label:'动画电影崛起',type:'movement',x:985,y:235,w:210,h:48,period:'p5',desc:'电视动画普及后，以高畑勋、宫崎骏等为代表的动画电影登上大银幕并走向全球，动画成为日本电影的标志。',meta:'1980年代—'},
+{id:'d12',label:'宫崎骏',type:'director',x:985,y:305,w:210,h:42,period:'p5',desc:'吉卜力工作室核心，以飞行、自然与少女成长主题，把动画电影提升到世界级艺术高度。',meta:'生于1941'},
+{id:'f14',label:'《风之谷》',type:'film',x:985,y:375,w:210,h:42,period:'p5',desc:'末世环保史诗，票房与口碑的成功直接催生吉卜力工作室的成立。',meta:'1984'},
+{id:'d13',label:'押井守',type:'director',x:985,y:445,w:210,h:42,period:'p5',desc:'以哲学思辨、赛博格与都市寓言拓展动画的成人表达，风格冷峻而精密。',meta:'生于1951'},
+{id:'f15',label:'《攻壳机动队》',type:'film',x:985,y:515,w:210,h:42,period:'p5',desc:'赛博朋克动画电影标杆，对意识与身体的追问深刻影响了《黑客帝国》等后世作品。',meta:'1995'},
+{id:'d14',label:'山田洋次',type:'director',x:985,y:585,w:210,h:42,period:'p5',desc:'国民导演，《寅次郎的故事》系列横跨半个世纪，承载日本庶民喜剧的温情传统。',meta:'生于1931'},
+{id:'f16',label:'《寅次郎的故事》',type:'film',x:985,y:655,w:210,h:42,period:'p5',desc:'世界影史最长的系列电影，漂泊浪子与故乡温情构成几代日本人的共同记忆。',meta:'1969—2019'},
+{id:'d15',label:'黑泽明',type:'director',x:985,y:725,w:210,h:42,period:'p5',desc:'晚年以宏大彩色史诗延续国际影响力，获戛纳金棕榈与奥斯卡终身成就奖。',meta:'1910—1998'},
+{id:'f17',label:'《乱》',type:'film',x:985,y:795,w:210,h:42,period:'p5',desc:'改编《李尔王》的战国史诗，色彩与构图登峰造极，是黑泽明晚年集大成之作。',meta:'1985'},
+{id:'c5',label:'吉卜力 / 手绘动画',type:'concept',x:985,y:865,w:210,h:48,period:'p5',desc:'吉卜力确立动画电影的艺术地位；以手绘为主的制作传统与宫崎骏、高畑勋的作者取向并行。',meta:'动画美学'},
+{id:'m6',label:'当代作者电影',type:'movement',x:1225,y:235,w:230,h:48,period:'p6',desc:'国际电影节路线与流媒体时代并行，日本电影以作者策略回归世界舞台，动画与实拍双线并进。',meta:'1995—至今'},
+{id:'d16',label:'北野武',type:'director',x:1225,y:305,w:230,h:42,period:'p6',desc:'暴力与静默、幽默与哀感并置的独特作者，电视出身却在国际影坛独树一帜。',meta:'生于1947'},
+{id:'f18',label:'《花火》',type:'film',x:1225,y:375,w:230,h:42,period:'p6',desc:'获威尼斯金狮奖，冷峻暴力与温情静物交织，是北野武美学的集大成。',meta:'1997'},
+{id:'d17',label:'宫崎骏',type:'director',x:1225,y:445,w:230,h:42,period:'p6',desc:'《千与千寻》斩获奥斯卡最佳动画长片，并创下日本影史票房纪录，再登创作高峰。',meta:'生于1941'},
+{id:'f19',label:'《千与千寻》',type:'film',x:1225,y:515,w:230,h:42,period:'p6',desc:'少女误入神灵世界的成长寓言，获奥斯卡最佳动画长片与柏林金熊奖。',meta:'2001'},
+{id:'d18',label:'是枝裕和',type:'director',x:1225,y:585,w:230,h:42,period:'p6',desc:'以纪录片式细腻观察书写家庭与日常，戛纳金棕榈得主，当代日本电影国际路线的核心。',meta:'生于1962'},
+{id:'f20',label:'《小偷家族》',type:'film',x:1225,y:655,w:230,h:42,period:'p6',desc:'非血缘“家族”的温情与裂痕，追问“家人”为何物，获戛纳金棕榈奖。',meta:'2018'},
+{id:'d19',label:'滨口龙介',type:'director',x:1225,y:725,w:230,h:42,period:'p6',desc:'以对话、时间结构与身体表演重建人际影像，是日本新世代最受国际关注的导演之一。',meta:'生于1978'},
+{id:'f21',label:'《驾驶我的车》',type:'film',x:1225,y:795,w:230,h:42,period:'p6',desc:'改编村上春树，以剧场排演与沉默沟通疗愈创伤，获奥斯卡最佳国际影片。',meta:'2021'},
+{id:'f22',label:'《你的名字。》',type:'film',x:1225,y:865,w:230,h:42,period:'p6',desc:'新海诚现象级动画，身体互换与灾后思念打动全球观众，刷新日本动画海外票房。',meta:'2016'},
+{id:'c6',label:'电影节路线 / 新世代',type:'concept',x:1225,y:935,w:230,h:48,period:'p6',desc:'从威尼斯、戛纳到奥斯卡，日本电影以作者策略回归国际舞台；新海诚、细田守等延续动画的全球号召力。',meta:'当代格局'}
+];
+const edges = [
+['root','p1','发展脉络'],['root','p2','发展脉络'],['root','p3','发展脉络'],['root','p4','发展脉络'],['root','p5','发展脉络'],['root','p6','发展脉络'],
+['p1','m1','时期包含'],['m1','d1','创作者'],['d1','f1','代表作'],['m1','d2','创作者'],['d2','f2','代表作'],['m1','c1','技术与观念'],
+['p2','m2','时期包含'],['m2','d3','代表人物'],['d3','f3','代表作'],['m2','d4','相关导演'],['d4','f4','代表作'],['m2','d5','相关导演'],['d5','f5','代表作'],['m2','c2','风格与管制'],
+['p3','m3','时期包含'],['m3','d6','代表导演'],['d6','f6','代表作'],['d6','f7','代表作'],['m3','d7','代表导演'],['d7','f8','代表作'],['m3','d8','代表导演'],['d8','f10','代表作'],['d4','f9','代表作'],['m3','c3','产业与技术'],
+['p4','m4','时期包含'],['m4','d9','代表导演'],['d9','f11','代表作'],['m4','d10','代表导演'],['d10','f12','代表作'],['m4','d11','相关导演'],['d11','f13','代表作'],['m4','c4','制作发行'],
+['p5','m5','时期包含'],['m5','d12','代表导演'],['d12','f14','代表作'],['m5','d13','相关导演'],['d13','f15','代表作'],['m5','d14','相关导演'],['d14','f16','代表作'],['m5','d15','相关导演'],['d15','f17','代表作'],['m5','c5','动画美学'],
+['p6','m6','时期包含'],['m6','d16','代表导演'],['d16','f18','代表作'],['m6','d17','相关导演'],['d17','f19','代表作'],['m6','d18','代表导演'],['d18','f20','代表作'],['m6','d19','代表导演'],['d19','f21','代表作'],['m6','f22','代表作品'],['m6','c6','重要格局']
+];
+const svgNS='http://www.w3.org/2000/svg', edgeG=document.getElementById('edges'), nodeG=document.getElementById('nodes');
+const byId=Object.fromEntries(nodes.map(n=>[n.id,n]));
+const adj={};
+edges.forEach(([a,b])=>{(adj[a]=adj[a]||[]).push(b);(adj[b]=adj[b]||[]).push(a);});
+function center(n){return [n.x+n.w/2,n.y+n.h/2]}
+const TYPE_NAMES={central:'核心',period:'时期',movement:'流派 / 运动',film:'代表电影',director:'导演',concept:'概念 / 方法'};
+function draw(){
+ edges.forEach(([a,b,label])=>{let A=byId[a],B=byId[b],[x1,y1]=center(A),[x2,y2]=center(B);
+  let path=document.createElementNS(svgNS,'path');path.setAttribute('d',`M${x1},${y1} C${x1},${(y1+y2)/2} ${x2},${(y1+y2)/2} ${x2},${y2}`);path.setAttribute('class',a==='root'?'edge major':'edge');path.dataset.period=(B.period||B.id.startsWith('p')?B.period||B.id:A.period||A.id);path.dataset.a=a;path.dataset.b=b;
+  path.setAttribute('marker-end','url(#arrow)');edgeG.appendChild(path);
+  if(label && (a==='root'||b.startsWith('p'))){let t=document.createElementNS(svgNS,'text');t.setAttribute('x',(x1+x2)/2+5);t.setAttribute('y',(y1+y2)/2);t.setAttribute('class','edge-label');t.textContent=label;edgeG.appendChild(t)}
+ });
+ nodes.forEach(n=>{let g=document.createElementNS(svgNS,'g');g.setAttribute('class',`node ${n.type==='central'?'central':n.type==='period'?'period':'kind-'+n.type}`);g.dataset.id=n.id;g.dataset.period=n.period||n.id;
+  let r=document.createElementNS(svgNS,'rect');r.setAttribute('x',n.x);r.setAttribute('y',n.y);r.setAttribute('width',n.w);r.setAttribute('height',n.h);g.appendChild(r);
+  let t=document.createElementNS(svgNS,'text');t.setAttribute('x',n.x+n.w/2);t.setAttribute('y',n.y+(n.type==='period'?23:n.h/2+4));t.textContent=n.label;g.appendChild(t);
+  let tip=document.createElementNS(svgNS,'title');tip.textContent=(n.detail||n.desc);g.appendChild(tip);
+  if(n.year){let y=document.createElementNS(svgNS,'text');y.setAttribute('x',n.x+n.w/2);y.setAttribute('y',n.y+42);y.setAttribute('class','year');y.textContent=n.year;g.appendChild(y)}
+  if(n.type==='period'){t.setAttribute('y',n.y+21);let y=document.createElementNS(svgNS,'text');y.setAttribute('x',n.x+n.w/2);y.setAttribute('y',n.y+41);y.setAttribute('class','year');y.textContent=n.year;g.appendChild(y)}
+  g.addEventListener('click',()=>select(n.id));nodeG.appendChild(g);
+ });
+}
+function openModal(n){
+ document.getElementById('modal-type').textContent=TYPE_NAMES[n.type]||n.type;
+ document.getElementById('modal-title').textContent=n.label;
+ document.getElementById('modal-meta').textContent=n.meta||n.year||'';
+ document.getElementById('modal-desc').textContent=n.detail||n.desc||'';
+ let chips=document.getElementById('modal-chips');chips.textContent='';
+ let rel=(adj[n.id]||[]).filter(x=>byId[x]).sort((a,b)=>byId[a].y-byId[b].y);
+ rel.forEach(id=>{let c=document.createElement('button');c.className='chip';c.textContent=byId[id].label;c.onclick=()=>select(id);chips.appendChild(c)});
+ if(!rel.length){chips.textContent='暂无关联节点';chips.style.color='#8493af';}
+ document.getElementById('modal').classList.remove('hidden');
+}
+function closeModal(){document.getElementById('modal').classList.add('hidden');document.querySelectorAll('.node').forEach(el=>el.classList.remove('dim'));document.querySelectorAll('#edges path').forEach(el=>el.classList.remove('dim'));}
+function highlight(id){
+ let neigh=new Set([id].concat(adj[id]||[]));
+ document.querySelectorAll('.node').forEach(el=>el.classList.toggle('dim',!neigh.has(el.dataset.id)));
+ document.querySelectorAll('#edges path').forEach(el=>el.classList.toggle('dim',!(el.dataset.a===id||el.dataset.b===id)));
+}
+function select(id){let n=byId[id];document.querySelectorAll('.node').forEach(el=>el.classList.toggle('selected',el.dataset.id===id));document.getElementById('info-title').textContent=n.label;document.getElementById('info-desc').textContent=n.desc||'';document.getElementById('info-meta').textContent=n.meta||n.year||'';openModal(n);highlight(id)}
+function filter(p){closeModal();document.querySelectorAll('.node').forEach(el=>{let id=el.dataset.id, own=byId[id].period;el.style.display=(p==='all'||id==='root'||id===p||own===p)?'':'none'});document.querySelectorAll('#edges path').forEach(el=>{el.style.display=(p==='all'||el.dataset.period===p)?'':'none'});document.querySelectorAll('#filters button').forEach(b=>b.classList.toggle('active',b.dataset.filter===p));}
+document.getElementById('filters').addEventListener('click',e=>{let b=e.target.closest('button');if(b)filter(b.dataset.filter)});
+document.getElementById('reset').onclick=()=>{filter('all');select('root');document.querySelector('.graph-wrap').scrollTo({left:0,top:0,behavior:'smooth'})};
+document.getElementById('download').onclick=()=>{let clone=document.getElementById('map').cloneNode(true);clone.setAttribute('xmlns',svgNS);let blob=new Blob([new XMLSerializer().serializeToString(clone)],{type:'image/svg+xml'});let a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='日本电影发展史知识图谱.svg';a.click();URL.revokeObjectURL(a.href)};
+document.getElementById('modal-close').onclick=closeModal;
+document.getElementById('modal').addEventListener('click',e=>{if(e.target.id==='modal')closeModal()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
+draw();select('root');
+</script>
+</body></html>
